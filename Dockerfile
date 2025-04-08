@@ -1,32 +1,48 @@
-FROM ubuntu:latest
+# Use a stable Ubuntu version (20.04 works reliably)
+FROM ubuntu:20.04
+
+# Set noninteractive mode to avoid prompts
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-# Copy the current directory into the container at /app
+# Copy all repository files into the container
 COPY . /app
 
-# Install necessary packages
+# Install necessary packages and clean up caches in one layer
 RUN apt-get update && apt-get install -y \
-    # Mach build tools
-    build-essential make msitools wget unzip rustc \
-    # Python
-    python3 python3-dev python3-pip \
-    # Camoufox build system tools
-    git p7zip-full golang-go aria2 curl rsync \
-    # CA certificates
+    build-essential \
+    make \
+    msitools \
+    wget \
+    unzip \
+    rustc \
+    python3 \
+    python3-dev \
+    python3-pip \
+    git \
+    p7zip-full \
+    golang-go \
+    aria2 \
+    curl \
+    rsync \
     ca-certificates \
-    && update-ca-certificates
+ && rm -rf /var/lib/apt/lists/*
 
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+# Install Rust via rustup in silent mode and update PATH
+RUN curl -fsSL https://sh.rustup.rs | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Fetch Firefox & apply initial patches
+# Optional: Force a specific rust toolchain version if needed, e.g.:
+# RUN rustup default stable
+
+# Run initial Camoufox setup: fetch Firefox source, apply patches, etc.
 RUN make setup-minimal && \
     make mozbootstrap && \
     mkdir -p /app/dist
 
-# Mount .mozbuild directory and dist folder
-VOLUME /root/.mozbuild
-VOLUME /app/dist
+# Declare volumes for persistent build cache and artifacts
+VOLUME ["/root/.mozbuild", "/app/dist"]
 
+# Set default entrypoint (for building packages with multibuild.py)
 ENTRYPOINT ["python3", "./multibuild.py"]
