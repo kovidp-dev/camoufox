@@ -1,0 +1,16 @@
+# .gitpod.yml
+image:
+  file: Dockerfile
+
+tasks:
+  - name: "Set up and build Camoufox"
+    command: |
+      # These commands run inside the Gitpod terminal
+      make setup-minimal
+      make mozbootstrap
+      # Optionally, build the source (if you wish to build immediately)
+      # make build
+
+ports:
+  - port: 8000
+    onOpen: open-preview
